@@ -1,7 +1,7 @@
 #include "mdpvi.hpp"
 #include <map>
-#include "mdp.h"
-#include "state_ctrl.h"
+#include "mdp.hpp"
+#include "state_ctrl.hpp"
 #include <limits>
 #include <fstream>
 

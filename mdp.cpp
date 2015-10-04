@@ -1,6 +1,6 @@
-#include "mdp.h"
+#include "mdp.hpp"
 #include <cmath>
-#include "state_ctrl.h"
+#include "state_ctrl.hpp"
 #include <map>
 #include "utils.hpp"
 #include <chrono>

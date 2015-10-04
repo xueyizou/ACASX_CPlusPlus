@@ -3,7 +3,7 @@
 #include "state_unctrl.hpp"
 #include <map>
 #include <iostream>
-#include <dtmc.hpp>
+#include "dtmc.hpp"
 #include <assert.h>
 #include <fstream>
 
