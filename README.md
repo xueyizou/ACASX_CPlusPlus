@@ -5,6 +5,6 @@ The FAA has funded research and development of a new approach to airborne collis
 
 For more information about ACAS X, please see this introduction paper.
 
-For Java implementation (in 3D), please download it from my Github.
+For Java implementation (in 3D), you can also find it from my Github.
 
-For the use of the Java code, please contact me at xz972@york.ac.uk.
+For the use of the code, please contact me at xz972@york.ac.uk.

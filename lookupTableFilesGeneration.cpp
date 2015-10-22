@@ -1,18 +1,17 @@
-#include "mdp.hpp"
-#include "mdpvi.hpp"
 #include <iostream>
 #include <chrono>
-#include <ctime>
-#include "dtmc.hpp"
-#include "dtmcvi.hpp"
 
+#include "mdp.h"
+#include "mdpvi.h"
+#include "dtmc.h"
+#include "dtmcvi.h"
 
 using namespace acasx;
 using namespace std;
 
-int main(int argc, char *argv[])
+int generateLookupTableFiles()
 {
-    cout<<"hi!Process starts..."<<endl;
+    cout<<"hi! lookup table generation process starts..."<<endl;
 
     std::chrono::time_point<std::chrono::system_clock> time0, time1,time2,time3, time4, time5, time6, time7;
 
@@ -44,4 +43,10 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
+//int main()
+//{
+//    return generateLookupTableFiles();
+//}
 

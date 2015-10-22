@@ -1,33 +1,22 @@
-#include "dtmcvi.hpp"
-#include "mdpvi.hpp"
-#include "state_unctrl.hpp"
-#include <map>
-#include <iostream>
-#include "dtmc.hpp"
-#include <assert.h>
-#include <fstream>
-
-using namespace std;
+#include "dtmcvi.h"
 
 namespace acasx {
 
-const int DTMCVI::T=MDPVI::T;
-const double DTMCVI::COLLISION_R=500;
-
 DTMCVI::DTMCVI(DTMC* dtmc): dtmc(dtmc)
 {
-    U = new double*[T+2];//U[T+1] is for the K-step expected cost when k>T (i.e. k>K), denoted JkBar
-    for(int i=0; i<T+2; ++i)
+    U = new double*[TIME_HORIZON+2];//U[T+1] is for the K-step expected cost when k>T (i.e. k>K), denoted JkBar
+    int dtmcUStatesNum = dtmc->getUStatesNum();
+    for(int i=0; i<TIME_HORIZON+2; ++i)
     {
-        U[i] = new double[DTMC::numUStates];
+        U[i] = new double[dtmcUStatesNum];
     }
 
-    uStates=dtmc->states();
+    uStates=dtmc->getStates();
     //initialisation
-    for (int i=0; i<DTMC::numUStates;i++)
+    for (int i=0; i<dtmcUStatesNum;i++)
     {
         State_UnCtrl* s=uStates+i;
-        if(s->getR()<=COLLISION_R)
+        if(s->getR()<=DTMCVI_COLLISION_R)
         {
             U[0][i]=1.0;
         }
@@ -38,26 +27,25 @@ DTMCVI::DTMCVI(DTMC* dtmc): dtmc(dtmc)
 
     }
 
-    map<State_UnCtrl*,double> TransitionStatesAndProbs;
+    map<int,double> TransitionStatesAndProbs;
 
     // repeat
-    for(int iteration=1;iteration<=T;iteration++)
+    for(int iteration=1;iteration<=TIME_HORIZON;iteration++)
     {
         cout<<iteration<<endl;
-        for (int i=0; i<DTMC::numUStates;i++)
+        for (int i=0; i<dtmcUStatesNum;i++)
         {
             State_UnCtrl* s=uStates+i;
             assert (s->getOrder()==i);
 
             double prob=0;
-            if(s->getR()>COLLISION_R)
+            if(s->getR()>DTMCVI_COLLISION_R)
             {
-                TransitionStatesAndProbs= dtmc->getTransitionStatesAndProbs(s);
+                TransitionStatesAndProbs= dtmc->getTransitionStatesAndProbs(i);
 
                 for (auto entry : TransitionStatesAndProbs)
                 {
-                    State_UnCtrl* nextState = entry.first;
-                    int nextStateOrder = nextState->getOrder();
+                    int nextStateOrder = entry.first;
                     prob += entry.second * U[iteration-1][nextStateOrder];
                 }
             }
@@ -70,7 +58,7 @@ DTMCVI::DTMCVI(DTMC* dtmc): dtmc(dtmc)
 
 DTMCVI::~DTMCVI()
 {
-    for(int i=0; i<T+2; ++i)
+    for(int i=0; i<TIME_HORIZON+2; ++i)
     {
         delete[] U[i];
     }
@@ -87,9 +75,9 @@ void DTMCVI::storeValues()
         cerr<<"failure in opening files"<<endl;
         return;
     }
-    for(int k=0; k<=T;++k )
+    for(int k=0; k<=TIME_HORIZON;++k )
     {
-        for (int su=0; su<DTMC::numUStates;++su)
+        for (int su=0; su<dtmc->getUStatesNum();++su)
         {
             entryTimeDistributionFileWriter<<U[k][su]<<"\n";
         }

@@ -1,5 +1,5 @@
-#ifndef DOUBLE2D
-#define DOUBLE2D
+#ifndef DOUBLE2D_H
+#define DOUBLE2D_H
 
 
 /**
@@ -7,8 +7,9 @@
  * \brief      Contains the Double2D class.
  */
 
+#include <iostream>
 #include <cmath>
-#include <ostream>
+using namespace std;
 
 namespace acasx {
     /**
@@ -89,7 +90,7 @@ namespace acasx {
          * \return     The dot product of this two-dimensional double2D with a
          *             specified two-dimensional double2D.
          */
-        inline double operator*(const Double2D &double2D) const
+        inline double operator*(const Double2D& double2D) const
         {
             return x_ * double2D.x() + y_ * double2D.y();
         }
@@ -130,7 +131,7 @@ namespace acasx {
          * \return     The double2D sum of this two-dimensional double2D with a
          *             specified two-dimensional double2D.
          */
-        inline Double2D operator+(const Double2D &double2D) const
+        inline Double2D operator+(const Double2D& double2D) const
         {
             return Double2D(x_ + double2D.x(), y_ + double2D.y());
         }
@@ -143,7 +144,7 @@ namespace acasx {
          * \return     The double2D difference of this two-dimensional double2D with a
          *             specified two-dimensional double2D.
          */
-        inline Double2D operator-(const Double2D &double2D) const
+        inline Double2D operator-(const Double2D& double2D) const
         {
             return Double2D(x_ - double2D.x(), y_ - double2D.y());
         }
@@ -155,7 +156,7 @@ namespace acasx {
          *                             test for equality.
          * \return     True if the two-dimensional double2Ds are equal.
          */
-        inline bool operator==(const Double2D &double2D) const
+        inline bool operator==(const Double2D& double2D) const
         {
             return x_ == double2D.x() && y_ == double2D.y();
         }
@@ -167,7 +168,7 @@ namespace acasx {
          *                             test for inequality.
          * \return     True if the two-dimensional double2Ds are not equal.
          */
-        inline bool operator!=(const Double2D &double2D) const
+        inline bool operator!=(const Double2D& double2D) const
         {
             return x_ != double2D.x() || y_ != double2D.y();
         }
@@ -179,7 +180,7 @@ namespace acasx {
          *                             multiplication should be computed.
          * \return     A reference to this two-dimensional double2D.
          */
-        inline Double2D &operator*=(double s)
+        inline Double2D& operator*=(double s)
         {
             x_ *= s;
             y_ *= s;
@@ -194,7 +195,7 @@ namespace acasx {
          *                             division should be computed.
          * \return     A reference to this two-dimensional double2D.
          */
-        inline Double2D &operator/=(double s)
+        inline Double2D& operator/=(double s)
         {
             const double invS = 1.0 / s;
             x_ *= invS;
@@ -210,7 +211,7 @@ namespace acasx {
          *                             double2D sum should be computed.
          * \return     A reference to this two-dimensional double2D.
          */
-        inline Double2D &operator+=(const Double2D &double2D)
+        inline Double2D& operator+=(const Double2D& double2D)
         {
             x_ += double2D.x();
             y_ += double2D.y();
@@ -226,7 +227,7 @@ namespace acasx {
          *                             double2D difference should be computed.
          * \return     A reference to this two-dimensional double2D.
          */
-        inline Double2D &operator-=(const Double2D &double2D)
+        inline Double2D& operator-=(const Double2D& double2D)
         {
             x_ -= double2D.x();
             y_ -= double2D.y();
@@ -250,7 +251,7 @@ namespace acasx {
      * \return     The scalar multiplication of the two-dimensional double2D with the
      *             scalar value.
      */
-    inline Double2D operator*(double s, const Double2D &double2D)
+    inline Double2D operator*(double s, const Double2D& double2D)
     {
         return Double2D(s * double2D.x(), s * double2D.y());
     }
@@ -265,7 +266,7 @@ namespace acasx {
      *                             the output stream.
      * \return     A reference to the output stream.
      */
-    inline std::ostream &operator<<(std::ostream &os, const Double2D &double2D)
+    inline std::ostream& operator<<(std::ostream& os, const Double2D& double2D)
     {
         os << "(" << double2D.x() << "," << double2D.y() << ")";
 
@@ -280,7 +281,7 @@ namespace acasx {
      *                             is to be computed.
      * \return     The length of the two-dimensional double2D.
      */
-    inline double length(const Double2D &double2D)
+    inline double length(const Double2D& double2D)
     {
         return std::sqrt(double2D * double2D);
     }
@@ -293,7 +294,7 @@ namespace acasx {
      *                             is to be computed.
      * \return     The squared length of the two-dimensional double2D.
      */
-    inline double lengthSq(const Double2D &double2D)
+    inline double lengthSq(const Double2D& double2D)
     {
         return double2D * double2D;
     }
@@ -308,9 +309,9 @@ namespace acasx {
      *                             matrix.
      * \return     The determinant of the two-dimensional square matrix.
      */
-    inline double det(const Double2D &double2D1, const Double2D &Double2D)
+    inline double det(const Double2D& a, const Double2D& b)
     {
-        return double2D1.x() * Double2D.y() - double2D1.y() * Double2D.x();
+        return a.x() * b.y() - a.y() * b.x();
     }
 
     /**
@@ -321,11 +322,11 @@ namespace acasx {
      *                             is to be computed.
      * \return     The normalization of the two-dimensional double2D.
      */
-    inline Double2D normalize(const Double2D &double2D)
+    inline Double2D normalize(const Double2D& double2D)
     {
         return double2D / length(double2D);
     }
 }
 
-#endif // DOUBLE2D
+#endif // DOUBLE2D_H
 

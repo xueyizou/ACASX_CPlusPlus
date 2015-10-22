@@ -1,5 +1,9 @@
-#ifndef STATE_UNCTRL_HPP
-#define STATE_UNCTRL_HPP
+#ifndef STATE_UNCTRL_H
+#define STATE_UNCTRL_H
+
+#include "pch.h"
+
+#include "utils.h"
 
 namespace acasx {
 
@@ -26,4 +30,4 @@ private:
 }
 
 
-#endif // STATE_UNCTRL_HPP
+#endif // STATE_UNCTRL_H

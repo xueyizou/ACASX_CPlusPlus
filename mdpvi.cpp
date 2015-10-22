@@ -1,16 +1,6 @@
-#include "mdpvi.hpp"
-#include <map>
-#include "mdp.hpp"
-#include "state_ctrl.hpp"
-#include <limits>
-#include <fstream>
-
-
-using namespace std;
+#include "mdpvi.h"
 
 namespace acasx {
-
-const int MDPVI::T=20;
 
 /**
  * Constructor.
@@ -19,49 +9,43 @@ const int MDPVI::T=20;
  */
 MDPVI::MDPVI(MDP *mdp): mdp(mdp)
 {
-    U = new double*[T+2];//U[T+1] is for the K-step expected cost when k>T (i.e. k>K), denoted JkBar
-    for(int i=0; i<T+2; ++i)
+    int numCStates = mdp->getCStatesNum();
+    U = new double*[TIME_HORIZON+2];//U[T+1] is for the K-step expected cost when k>T (i.e. k>K), denoted JkBar
+    for(int i=0; i<TIME_HORIZON+2; ++i)
     {
-        U[i] = new double[MDP::numCStates];
+        U[i] = new double[numCStates];
     }
 
-    states=mdp->states();
+    cStates=mdp->getStates();
     //initialisation
-    for (int i=0; i<MDP::numCStates;++i)
+    for (int i=0; i<numCStates;++i)
     {
-        State_Ctrl* s=states+i;
-        U[0][i]=mdp->reward(s, -1);
-        U[T+1][i]=0;
+        U[0][i]=mdp->reward(i, -1);
+        U[TIME_HORIZON+1][i]=0;
     }
 
-    double* JkBar = new double[MDP::numCStates];
+    double* JkBar = new double[numCStates];
     // repeat
-    for(int iteration=1;iteration<=T;++iteration)
+    for(int iteration=1;iteration<=TIME_HORIZON; ++iteration)
     {
         cout<<iteration<<endl;
-        for (int i=0; i<MDP::numCStates;++i)
+        for (int i=0; i<numCStates;++i)
         {
-            State_Ctrl* s=states+i;
-            if(s->getOrder()!=i)
-            {
-                cerr<<"error happens in valueIteration() + s.getOrder()!=i"<<endl;
-            }
-            vector<int> actions= mdp->actions(s);
+            vector<int> actions= mdp->actions(i);
 
             double aMax1 = -std::numeric_limits<double>::infinity();
             double aMax2 = -std::numeric_limits<double>::infinity();
             for (int& a : actions)
             {
-                double aSum1=mdp->reward(s, a);
-                double aSum2=mdp->reward(s, a);
-                map<State_Ctrl*,double> TransitionStatesAndProbs= mdp->getTransitionStatesAndProbs(s, a);
+                double aSum1=mdp->reward(i, a);
+                double aSum2=mdp->reward(i, a);
+                map<int,double> TransitionStatesAndProbs= mdp->getTransitionStatesAndProbs(i, a);
 
                 for (auto& entry : TransitionStatesAndProbs)
                 {
-                    State_Ctrl* nextState = entry.first;
-                    int nextStateOrder = nextState->getOrder();
+                    int nextStateOrder = entry.first;
                     aSum1 += entry.second * U[iteration-1][nextStateOrder];
-                    aSum2 += entry.second * U[T+1][nextStateOrder];
+                    aSum2 += entry.second * U[TIME_HORIZON+1][nextStateOrder];
                 }
 
                 if (aSum1 > aMax1)
@@ -79,9 +63,9 @@ MDPVI::MDPVI(MDP *mdp): mdp(mdp)
             JkBar[i]=aMax2;
         }
 
-        for(int i=0; i<MDP::numCStates;++i)
+        for(int i=0; i<numCStates;++i)
         {
-            U[T+1][i]=JkBar[i];
+            U[TIME_HORIZON+1][i]=JkBar[i];
         }
 
     }
@@ -91,26 +75,22 @@ MDPVI::MDPVI(MDP *mdp): mdp(mdp)
 
 MDPVI::~MDPVI()
 {
-    for(int i=0; i<T+2; ++i)
+    for(int i=0; i<TIME_HORIZON+2; ++i)
     {
         delete[] U[i];
     }
     delete[] U;
 }
 
-double MDPVI::getQValue(int k,State_Ctrl* state, int action)
+double MDPVI::getQValue(int k, int stateOrder, int action)
 {
     double QValue = 0;
-    map<State_Ctrl*,double> TransitionStatesAndProbs= mdp->getTransitionStatesAndProbs(state, action);
+    map<int,double> TransitionStatesAndProbs= mdp->getTransitionStatesAndProbs(stateOrder, action);
 
     for (auto& entry : TransitionStatesAndProbs)
     {
-        if(entry.second>1)
-        {
-            cerr<<entry.second<<" greater than 1"<<endl;
-        }
-        State_Ctrl* nextState = entry.first;
-        int nextStateOrder=nextState->getOrder();
+        assert(entry.second<=1);
+        int nextStateOrder=entry.first;
         QValue += entry.second*  U[k-1][nextStateOrder];
     }
     return QValue;
@@ -128,11 +108,11 @@ void MDPVI::storeQValues()
     if(!indexFileWriter.is_open() || !costFileWriter.is_open() || !actionFileWriter.is_open())
     {
         cerr<<"failure in opening files"<<endl;
-        return;
+        abort();
     }
 
     int index=0;
-    for (int i=0; i<MDP::numCStates;i++)//T=k=0
+    for (int i=0; i<mdp->getCStatesNum(); ++i)//T=k=0
     {
         indexFileWriter<<index<<"\n";
         actionFileWriter<<0<<"\n";  //leaving states, using O to avoid arrayIndexOutofRange problem
@@ -140,17 +120,16 @@ void MDPVI::storeQValues()
         costFileWriter<<U[0][i]<<"\n";
     }
 
-    for(int k=1; k<=T+1;k++ )
+    for(int k=1; k<=TIME_HORIZON+1; ++k )
     {
-        for (int i=0; i<MDP::numCStates;i++)
+        for (int i=0; i<mdp->getCStatesNum();++i)
         {
-            State_Ctrl* s=states+i;
-            vector<int> actions=mdp->actions(s);
+            vector<int> actions=mdp->actions(i);
             indexFileWriter<<index<<"\n";
             for (int& a :actions )
             {
                 actionFileWriter<<a<<"\n";
-                double QValue = getQValue(k, s, a);
+                double QValue = getQValue(k, i, a);
                 costFileWriter<<QValue<<"\n";
             }
             index+=actions.size();
@@ -164,7 +143,6 @@ void MDPVI::storeQValues()
     indexFileWriter.close();
     costFileWriter.close();
     actionFileWriter.close();
-
 
 }
 

@@ -1,22 +1,21 @@
-#include "state_ctrl.hpp"
-#include "mdp.hpp"
+#include "state_ctrl.h"
 
 namespace acasx {
 
 State_Ctrl::State_Ctrl(int hIdx, int oVyIdx, int iVyIdx, int raIdx)
 {
-    h=MDP::hRes*hIdx;
-    oVy=MDP::oVRes*oVyIdx;
-    iVy=MDP::iVRes*iVyIdx;
+    h=MDP_H_RES*hIdx;
+    oVy=MDP_OV_RES*oVyIdx;
+    iVy=MDP_IV_RES*iVyIdx;
     ra=raIdx;
 
-    int a= hIdx +MDP::nh;
-    int b= oVyIdx +MDP::noVy;
-    int c= iVyIdx +MDP::niVy;
+    int a= hIdx +MDP_H_NUM;
+    int b= oVyIdx +MDP_OVY_NUM;
+    int c= iVyIdx +MDP_IVY_NUM;
 
-    order=a*(2*MDP::noVy+1)*(2*MDP::niVy+1)*(MDP::nra)
-            + b*(2*MDP::niVy+1)*(MDP::nra)
-            + c*(MDP::nra)
+    order=a*(2*MDP_OVY_NUM+1)*(2*MDP_IVY_NUM+1)*(MDP_RA_NUM)
+            + b*(2*MDP_IVY_NUM+1)*(MDP_RA_NUM)
+            + c*(MDP_RA_NUM)
             + ra;
 }
 
@@ -26,15 +25,7 @@ State_Ctrl::State_Ctrl()
 
 int State_Ctrl::calOrder(int hIdx, int oVyIdx, int iVyIdx, int raIdx)
 {
-    int a= hIdx +MDP::nh;
-    int b= oVyIdx +MDP::noVy;
-    int c= iVyIdx +MDP::niVy;
-
-    int order=a*(2*MDP::noVy+1)*(2*MDP::niVy+1)*(MDP::nra)
-            + b*(2*MDP::niVy+1)*(MDP::nra)
-            + c*(MDP::nra)
-            + raIdx;
-    return order;
+    return State_Ctrl_CalOrder(hIdx, oVyIdx, iVyIdx,  raIdx);
 }
 
 bool State_Ctrl::operator<(const State_Ctrl& other)

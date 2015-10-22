@@ -1,72 +1,48 @@
-#include "mdp.hpp"
-#include <cmath>
-#include "state_ctrl.hpp"
-#include <map>
-#include "utils.hpp"
-#include <chrono>
-#include <ctime>
-
-
-using namespace std;
+#include "mdp.h"
 
 
 namespace acasx {
 
-const double MDP::UPPER_H=600.0;
-const double MDP::UPPER_VY=70.0;
-
-const int MDP::nh = 10;//10
-const int MDP::noVy=7;//7
-const int MDP::niVy= 7;//7
-const int MDP::nra=7;
-
-const double MDP::hRes = UPPER_H/nh;
-const double MDP::oVRes = UPPER_VY/noVy;
-const double MDP::iVRes = UPPER_VY/niVy;
-
-const double MDP::WHITE_NOISE_SDEV=3.0;
-
-const int MDP::numCStates= (2*nh+1)*(2*noVy+1)*(2*niVy+1)*nra;
+vector< tuple<double, double, double> > sigmaPointsA;
+vector< tuple<double, double, double> > sigmaPointsB;
 
 MDP::MDP()
 {
-//    totalStates.resize(numCStates);
+    numCStates= (2*MDP_H_NUM+1)*(2*MDP_OVY_NUM+1)*(2*MDP_IVY_NUM+1)*MDP_RA_NUM;
     cStates = new State_Ctrl[numCStates];
-    cout<<cStates[5].getH()<<endl;
+
     if(!cStates)
     {
         cout<<cStates<<endl;
         cerr<<"failure in dynamic memory allocation "<<endl;
-        return;
+        abort();
     }
 
-    for(int hIdx=-nh; hIdx<=nh;hIdx++)//
+    for(int hIdx=-MDP_H_NUM; hIdx<=MDP_H_NUM; ++hIdx)//
     {
-        for(int oVyIdx=-noVy; oVyIdx<=noVy;oVyIdx++)//
+        for(int oVyIdx=-MDP_OVY_NUM; oVyIdx<=MDP_OVY_NUM; ++oVyIdx)//
         {
-            for(int iVyIdx=-niVy; iVyIdx<=niVy;iVyIdx++)
+            for(int iVyIdx=-MDP_IVY_NUM; iVyIdx<=MDP_IVY_NUM; ++iVyIdx)
             {
-                for(int raIdx=0; raIdx<nra;raIdx++)//
+                for(int raIdx=0; raIdx<MDP_RA_NUM; ++raIdx)//
                 {
                     State_Ctrl* ptr = new State_Ctrl (hIdx, oVyIdx, iVyIdx, raIdx);
                     cStates[State_Ctrl::calOrder(hIdx, oVyIdx, iVyIdx, raIdx)] =*ptr;
-//                    totalStates[State_Ctrl::calOrder(hIdx, oVyIdx, iVyIdx, raIdx)] =*ptr;
                     delete ptr;
                 }
             }
         }
     }
-    cout<<cStates[5].getH()<<endl;
 
     sigmaPointsA.push_back(make_tuple(0.0,0.0,1.0/2));
-    sigmaPointsA.push_back(make_tuple(0.0,sqrt(2.0)*WHITE_NOISE_SDEV,1.0/4));
-    sigmaPointsA.push_back(make_tuple(0.0,-sqrt(2.0)*WHITE_NOISE_SDEV,1.0/4));
+    sigmaPointsA.push_back(make_tuple(0.0,sqrt(2.0)*MDP_WHITE_NOISE_SDEV,1.0/4));
+    sigmaPointsA.push_back(make_tuple(0.0,-sqrt(2.0)*MDP_WHITE_NOISE_SDEV,1.0/4));
 
     sigmaPointsB.push_back(make_tuple(0.0,0.0,1.0/3));
-    sigmaPointsB.push_back(make_tuple(sqrt(3.0)*WHITE_NOISE_SDEV,0.0,1.0/6));
-    sigmaPointsB.push_back(make_tuple(-sqrt(3.0)*WHITE_NOISE_SDEV,0.0,1.0/6));
-    sigmaPointsB.push_back(make_tuple(0.0,sqrt(3.0)*WHITE_NOISE_SDEV,1.0/6));
-    sigmaPointsB.push_back(make_tuple(0.0,-sqrt(3.0)*WHITE_NOISE_SDEV,1.0/6));
+    sigmaPointsB.push_back(make_tuple(sqrt(3.0)*MDP_WHITE_NOISE_SDEV,0.0,1.0/6));
+    sigmaPointsB.push_back(make_tuple(-sqrt(3.0)*MDP_WHITE_NOISE_SDEV,0.0,1.0/6));
+    sigmaPointsB.push_back(make_tuple(0.0,sqrt(3.0)*MDP_WHITE_NOISE_SDEV,1.0/6));
+    sigmaPointsB.push_back(make_tuple(0.0,-sqrt(3.0)*MDP_WHITE_NOISE_SDEV,1.0/6));
 
 }
 
@@ -76,9 +52,7 @@ MDP::~MDP()
     delete[] cStates;
 }
 
-State_Ctrl* MDP::states(void){
-    return cStates;
-}
+
 
 /**
  * Get the set of actions for state s.
@@ -86,30 +60,32 @@ State_Ctrl* MDP::states(void){
  * @param s the state.
  * @return the list of actions for state s.
  */
-vector<int> MDP::actions(State_Ctrl* cstate)
+vector<int> MDP::actions(int cStateOrder)
 {
     vector<int> actions;
 
-    if(cstate->getH()==UPPER_H || cstate->getoVy()== UPPER_VY)
+    State_Ctrl* cStatePtr = cStates+cStateOrder;
+
+    if(cStatePtr->getH()==MDP_UPPER_H || cStatePtr->getoVy()== MDP_UPPER_VY)
     {
         actions.push_back(0);//"COC"
         actions.push_back(4);//"SDES25"
         return actions;
     }
-    if(cstate->getH()==-UPPER_H || cstate->getoVy()== -UPPER_VY)
+    if(cStatePtr->getH()==-MDP_UPPER_H || cStatePtr->getoVy()== -MDP_UPPER_VY)
     {
         actions.push_back(0);//"COC"
         actions.push_back(3);//"SCL25"
         return actions;
     }
-    else if(cstate->getRa()==0)//COC
+    else if(cStatePtr->getRa()==0)//COC
     {
         actions.push_back(0);//"COC"
         actions.push_back(1);//"CL25"
         actions.push_back(2);//"DES25"
         return actions;
     }
-    else if(cstate->getRa()==1)//CL25
+    else if(cStatePtr->getRa()==1)//CL25
     {
         actions.push_back(0);//"COC"
         actions.push_back(1);//"CL25"
@@ -117,7 +93,7 @@ vector<int> MDP::actions(State_Ctrl* cstate)
         actions.push_back(5);//"SCL42"
         return actions;
     }
-    else if(cstate->getRa()==2)//DES25
+    else if(cStatePtr->getRa()==2)//DES25
     {
         actions.push_back(0);//"COC"
         actions.push_back(2);//"DES25"
@@ -125,7 +101,7 @@ vector<int> MDP::actions(State_Ctrl* cstate)
         actions.push_back(6);//"SDES42"
         return actions;
     }
-    else if(cstate->getRa()==3)//"SCL25"
+    else if(cStatePtr->getRa()==3)//"SCL25"
     {
         actions.push_back(0);//"COC"
         actions.push_back(3);//"SCL25"
@@ -133,7 +109,7 @@ vector<int> MDP::actions(State_Ctrl* cstate)
         actions.push_back(5);//"SCL42"
         return actions;
     }
-    else if(cstate->getRa()==4)//"SDES25"
+    else if(cStatePtr->getRa()==4)//"SDES25"
     {
         actions.push_back(0);//"COC"
         actions.push_back(3);//"SCL25"
@@ -141,7 +117,7 @@ vector<int> MDP::actions(State_Ctrl* cstate)
         actions.push_back(6);//"SDES42"
         return actions;
     }
-    else if(cstate->getRa()==5)//"SCL42"
+    else if(cStatePtr->getRa()==5)//"SCL42"
     {
         actions.push_back(0);//"COC"
         actions.push_back(3);//"SCL25"
@@ -149,7 +125,7 @@ vector<int> MDP::actions(State_Ctrl* cstate)
         actions.push_back(5);//"SCL42"
         return actions;
     }
-    else if(cstate->getRa()==6)//"SDES42"
+    else if(cStatePtr->getRa()==6)//"SDES42"
     {
         actions.push_back(0);//"COC"
         actions.push_back(3);//"SCL25"
@@ -165,19 +141,21 @@ vector<int> MDP::actions(State_Ctrl* cstate)
 
 }
 
-map<State_Ctrl*,double> MDP::getTransitionStatesAndProbs(State_Ctrl* cstate, int actionCode)
+map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode)
 {
 //    std::chrono::time_point<std::chrono::system_clock> time0, time1;
 //    time0 = std::chrono::system_clock::now();
 
-    map<State_Ctrl*,double> TransitionStatesMapProbs;
+    State_Ctrl* cStatePtr = cStates+cStateOrder;
+
+    map<int,double> TransitionStatesMapProbs;
 
     double targetV=getActionV(actionCode);
     double accel=getActionA(actionCode);
-    vector< pair<State_Ctrl*,double> > nextStateandProbabilities;
+    vector< pair<int,double> > nextStateandProbabilities;
 
-    if( (accel>0 && targetV>cstate->getoVy() && cstate->getoVy()<UPPER_VY)
-            || (accel<0 && targetV<cstate->getoVy() && cstate->getoVy()>-UPPER_VY))
+    if( (accel>0 && targetV>cStatePtr->getoVy() && cStatePtr->getoVy()<MDP_UPPER_VY)
+            || (accel<0 && targetV<cStatePtr->getoVy() && cStatePtr->getoVy()>-MDP_UPPER_VY))
     {// own aircraft follows a RA other than COC
 
         for(auto iter=sigmaPointsA.begin(); iter!=sigmaPointsA.end(); ++iter)
@@ -186,30 +164,30 @@ map<State_Ctrl*,double> MDP::getTransitionStatesAndProbs(State_Ctrl* cstate, int
             double iAy=get<1>(*iter);
             double sigmaP=get<2>(*iter);
 
-            double hP= cstate->getH()+ (cstate->getiVy()-cstate->getoVy()) + 0.5*(iAy-oAy);
-            double oVyP= max(- UPPER_VY, min( UPPER_VY, cstate->getoVy()+oAy));
-            double iVyP= max(- UPPER_VY, min( UPPER_VY, cstate->getiVy()+iAy));
+            double hP= cStatePtr->getH()+ (cStatePtr->getiVy()-cStatePtr->getoVy()) + 0.5*(iAy-oAy);
+            double oVyP= max(- MDP_UPPER_VY, min( MDP_UPPER_VY, cStatePtr->getoVy()+oAy));
+            double iVyP= max(- MDP_UPPER_VY, min( MDP_UPPER_VY, cStatePtr->getiVy()+iAy));
             int raP=actionCode;
 
-            int hIdxL = (int)floor(hP/hRes);
-            int oVyIdxL = (int)floor(oVyP/oVRes);
-            int iVyIdxL = (int)floor(iVyP/iVRes);
+            int hIdxL = (int)floor(hP/MDP_H_RES);
+            int oVyIdxL = (int)floor(oVyP/MDP_OV_RES);
+            int iVyIdxL = (int)floor(iVyP/MDP_IV_RES);
             for(int i=0;i<=1;i++)
             {
                 int hIdx = (i==0? hIdxL : hIdxL+1);
-                int hIdxP= hIdx< -nh? -nh: (hIdx>nh? nh : hIdx);
+                int hIdxP= hIdx< -MDP_H_NUM? -MDP_H_NUM: (hIdx>MDP_H_NUM? MDP_H_NUM : hIdx);
                 for(int j=0;j<=1;j++)
                 {
                     int oVzIdx = (j==0? oVyIdxL : oVyIdxL+1);
-                    int oVzIdxP= oVzIdx<-noVy? -noVy: (oVzIdx>noVy? noVy : oVzIdx);
+                    int oVzIdxP= oVzIdx<-MDP_OVY_NUM? -MDP_OVY_NUM: (oVzIdx>MDP_OVY_NUM? MDP_OVY_NUM : oVzIdx);
                     for(int k=0;k<=1;k++)
                     {
                         int iVzIdx = (k==0? iVyIdxL : iVyIdxL+1);
-                        int iVzIdxP= iVzIdx<-niVy? -niVy: (iVzIdx>niVy? niVy : iVzIdx);
+                        int iVzIdxP= iVzIdx<-MDP_IVY_NUM? -MDP_IVY_NUM: (iVzIdx>MDP_IVY_NUM? MDP_IVY_NUM : iVzIdx);
 
-                        State_Ctrl* nextState=(cStates+State_Ctrl::calOrder(hIdxP, oVzIdxP, iVzIdxP, raP));
-                        double probability= sigmaP*(1-abs(hIdx-hP/hRes))*(1-abs(oVzIdx-oVyP/oVRes))*(1-abs(iVzIdx-iVyP/iVRes));
-                        nextStateandProbabilities.push_back(make_pair(nextState,probability) );
+                        int nextStateOrder= State_Ctrl::calOrder(hIdxP, oVzIdxP, iVzIdxP, raP);
+                        double probability= sigmaP*(1-fabs(hIdx-hP/MDP_H_RES))*(1-fabs(oVzIdx-oVyP/MDP_OV_RES))*(1-fabs(iVzIdx-iVyP/MDP_IV_RES));
+                        nextStateandProbabilities.push_back(make_pair(nextStateOrder,probability) );
                     }
                 }
             }
@@ -225,30 +203,30 @@ map<State_Ctrl*,double> MDP::getTransitionStatesAndProbs(State_Ctrl* cstate, int
             double iAy=get<1>(*iter);
             double sigmaP=get<2>(*iter);
 
-            double hP= cstate->getH()+ (cstate->getiVy()-cstate->getoVy()) + 0.5*(iAy-oAy);
-            double oVyP= max(-UPPER_VY, min(UPPER_VY, cstate->getoVy()+oAy));
-            double iVyP= max(-UPPER_VY, min(UPPER_VY, cstate->getiVy()+iAy));
+            double hP= cStatePtr->getH()+ (cStatePtr->getiVy()-cStatePtr->getoVy()) + 0.5*(iAy-oAy);
+            double oVyP= max(-MDP_UPPER_VY, min(MDP_UPPER_VY, cStatePtr->getoVy()+oAy));
+            double iVyP= max(-MDP_UPPER_VY, min(MDP_UPPER_VY, cStatePtr->getiVy()+iAy));
             int raP=actionCode;
 
-            int hIdxL = (int)floor(hP/hRes);
-            int oVyIdxL = (int)floor(oVyP/oVRes);
-            int iVyIdxL = (int)floor(iVyP/iVRes);
+            int hIdxL = (int)floor(hP/MDP_H_RES);
+            int oVyIdxL = (int)floor(oVyP/MDP_OV_RES);
+            int iVyIdxL = (int)floor(iVyP/MDP_IV_RES);
             for(int i=0;i<=1;i++)
             {
                 int hIdx = (i==0? hIdxL : hIdxL+1);
-                int hIdxP= hIdx< -nh? -nh: (hIdx>nh? nh : hIdx);
+                int hIdxP= hIdx< -MDP_H_NUM? -MDP_H_NUM: (hIdx>MDP_H_NUM? MDP_H_NUM : hIdx);
                 for(int j=0;j<=1;j++)
                 {
                     int oVyIdx = (j==0? oVyIdxL : oVyIdxL+1);
-                    int oVyIdxP= oVyIdx<-noVy? -noVy: (oVyIdx>noVy? noVy : oVyIdx);
+                    int oVyIdxP= oVyIdx<-MDP_OVY_NUM? -MDP_OVY_NUM: (oVyIdx>MDP_OVY_NUM? MDP_OVY_NUM : oVyIdx);
                     for(int k=0;k<=1;k++)
                     {
                         int iVyIdx = (k==0? iVyIdxL : iVyIdxL+1);
-                        int iVyIdxP= iVyIdx<-niVy? -niVy: (iVyIdx>niVy? niVy : iVyIdx);
+                        int iVyIdxP= iVyIdx<-MDP_IVY_NUM? -MDP_IVY_NUM: (iVyIdx>MDP_IVY_NUM? MDP_IVY_NUM : iVyIdx);
 
-                        State_Ctrl* nextState= (cStates+State_Ctrl::calOrder(hIdxP, oVyIdxP, iVyIdxP,raP));
-                        double probability= sigmaP*(1-abs(hIdx-hP/hRes))*(1-abs(oVyIdx-oVyP/oVRes))*(1-abs(iVyIdx-iVyP/iVRes));
-                        nextStateandProbabilities.push_back(make_pair(nextState,probability) );
+                        int nextStateOrder= State_Ctrl::calOrder(hIdxP, oVyIdxP, iVyIdxP,raP);
+                        double probability= sigmaP*(1-fabs(hIdx-hP/MDP_H_RES))*(1-fabs(oVyIdx-oVyP/MDP_OV_RES))*(1-fabs(iVyIdx-iVyP/MDP_IV_RES));
+                        nextStateandProbabilities.push_back(make_pair(nextStateOrder,probability) );
                     }
                 }
             }
@@ -259,17 +237,17 @@ map<State_Ctrl*,double> MDP::getTransitionStatesAndProbs(State_Ctrl* cstate, int
 //    time1 = std::chrono::system_clock::now();
 //    cout<<"map time: "<< (static_cast<std::chrono::duration<double>>(time1-time0)).count() <<" senconds."<<endl;
 
-    for(auto iter=nextStateandProbabilities.begin(); iter != nextStateandProbabilities.end(); ++iter)
+    for(auto entry:nextStateandProbabilities)
     {
-        State_Ctrl* nextState=iter->first;
-        auto iPairFound = TransitionStatesMapProbs.find(nextState);
+        int nextStateOrder=entry.first;
+        auto iPairFound = TransitionStatesMapProbs.find(nextStateOrder);
         if(iPairFound != TransitionStatesMapProbs.end())
         {
-            TransitionStatesMapProbs[nextState] += iter->second;
+            TransitionStatesMapProbs[nextStateOrder] += entry.second;
         }
         else
         {
-            TransitionStatesMapProbs.insert(make_pair(nextState, iter->second));
+            TransitionStatesMapProbs.insert(entry);
         }
 
     }
@@ -281,11 +259,13 @@ map<State_Ctrl*,double> MDP::getTransitionStatesAndProbs(State_Ctrl* cstate, int
 }
 
 
-double MDP::reward(State_Ctrl* cstate,int actionCode)
+double MDP::reward(int cStateOrder, int actionCode)
 {
+    State_Ctrl* cStatePtr = cStates+cStateOrder;
+
     if(actionCode==-1)//terminate
     {
-        if(abs(cstate->getH())<100)
+        if(fabs(cStatePtr->getH())<100)
         {//NMAC
             return -10000;
         }
@@ -297,11 +277,11 @@ double MDP::reward(State_Ctrl* cstate,int actionCode)
 
     if(actionCode==1)
     {
-        if(cstate->getoVy()>0)
+        if(cStatePtr->getoVy()>0)
         {
             return -50;
         }
-        else if(cstate->getoVy()<0)
+        else if(cStatePtr->getoVy()<0)
         {
             return -100;
         }
@@ -309,11 +289,11 @@ double MDP::reward(State_Ctrl* cstate,int actionCode)
     }
     if(actionCode==2)
     {
-        if(cstate->getoVy()>0)
+        if(cStatePtr->getoVy()>0)
         {
             return -100;
         }
-        else if(cstate->getoVy()<0)
+        else if(cStatePtr->getoVy()<0)
         {
             return -50;
         }
@@ -324,14 +304,14 @@ double MDP::reward(State_Ctrl* cstate,int actionCode)
         return 100;
     }
 
-    if( ((cstate->getRa()==1||cstate->getRa()==3) && actionCode==5)
-            || ((cstate->getRa()==2||cstate->getRa()==4)&& actionCode==6) )
+    if( ((cStatePtr->getRa()==1||cStatePtr->getRa()==3) && actionCode==5)
+            || ((cStatePtr->getRa()==2||cStatePtr->getRa()==4)&& actionCode==6) )
     {//strengthening
         return -500;
     }
 
-    if( ((cstate->getRa()==1 || cstate->getRa()==3 || cstate->getRa()==5)&& actionCode==4)
-            || ((cstate->getRa()==2 || cstate->getRa()==4 || cstate->getRa()==6)&& actionCode==3) )
+    if( ((cStatePtr->getRa()==1 || cStatePtr->getRa()==3 || cStatePtr->getRa()==5)&& actionCode==4)
+            || ((cStatePtr->getRa()==2 || cStatePtr->getRa()==4 || cStatePtr->getRa()==6)&& actionCode==3) )
     {//reversal
         return -1000;
     }

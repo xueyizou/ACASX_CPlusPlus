@@ -1,19 +1,16 @@
-#include "state_unctrl.hpp"
-#include "dtmc.hpp"
-
-using namespace std;
+#include "state_unctrl.h"
 
 namespace acasx {
 
 State_UnCtrl::State_UnCtrl(int rIdx, int rvIdx, int thetaIdx)
 {
-    r= DTMC::rRes*rIdx;
-    rv= DTMC::rvRes*rvIdx;
-    theta = DTMC::thetaRes*thetaIdx;
+    r= DTMC_R_RES*rIdx;
+    rv= DTMC_RV_RES*rvIdx;
+    theta = DTMC_THETA_RES*thetaIdx;
 
-    order=rIdx*(DTMC::nrv+1)*(2*DTMC::ntheta+1)
-            + rvIdx*(2*DTMC::ntheta+1)
-            + (thetaIdx+DTMC::ntheta);
+    order=rIdx*(DTMC_RV_NUM+1)*(2*DTMC_THETA_NUM+1)
+            + rvIdx*(2*DTMC_THETA_NUM+1)
+            + (thetaIdx+DTMC_THETA_NUM);
 
 }
 
@@ -40,11 +37,7 @@ int State_UnCtrl::getOrder() const {
 
 int State_UnCtrl::calOrder(int rIdx, int rvIdx, int thetaIdx)
 {
-    int order=rIdx*(DTMC::nrv+1)*(2*DTMC::ntheta+1)
-            + rvIdx*(2*DTMC::ntheta+1)
-            + (thetaIdx+DTMC::ntheta);
-
-    return order;
+    return State_UnCtrl_CalOrder(rIdx, rvIdx, thetaIdx);
 }
 
 }
