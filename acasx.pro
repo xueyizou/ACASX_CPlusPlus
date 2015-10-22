@@ -19,8 +19,6 @@ SOURCES += \
     dtmc.cpp \
     dtmcvi.cpp \
     lookuptable.cpp \
-    #acasx_multithreats.cpp\
-    #acasx_singlethreat.cpp \
     utils.cpp \
     constants.cpp \
     acasx_interface.cpp \
@@ -29,9 +27,6 @@ SOURCES += \
 HEADERS += \
     mdp.h \
     state_ctrl.h \
-    constants.h \
-    #acasx_multithreats.h \
-    #acasx_singlethreat.h \
     double2d.h \
     double3d.h \
     dtmc.h \
