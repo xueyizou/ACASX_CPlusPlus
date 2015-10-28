@@ -1,8 +1,23 @@
+/* *************************************************************************************
+ * Copyright (C) Xueyi Zou - All Rights Reserved
+ * Written by Xueyi Zou <xz972@york.ac.uk>, 2015
+ * You are free to use/modify/distribute this file for whatever purpose!
+ -----------------------------------------------------------------------
+ |THIS FILE IS DISTRIBUTED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+ |WARRANTY. THE USER WILL USE IT AT HIS/HER OWN RISK. THE ORIGINAL
+ |AUTHORS AND COPPELIA ROBOTICS GMBH WILL NOT BE LIABLE FOR DATA LOSS,
+ |DAMAGES, LOSS OF PROFITS OR ANY OTHER KIND OF LOSS WHILE USING OR
+ |MISUSING THIS SOFTWARE.
+ ------------------------------------------------------------------------
+
+ **************************************************************************************/
+
 #include "mdp.h"
 
 
 namespace acasx {
 
+// sigma points for sampling
 vector< tuple<double, double, double> > sigmaPointsA;
 vector< tuple<double, double, double> > sigmaPointsB;
 
@@ -141,6 +156,7 @@ vector<int> MDP::actions(int cStateOrder)
 
 }
 
+//describe the transitions, return a map of next states to probabilities from a given state.
 map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode)
 {
 //    std::chrono::time_point<std::chrono::system_clock> time0, time1;
@@ -169,6 +185,7 @@ map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode
             double iVyP= max(- MDP_UPPER_VY, min( MDP_UPPER_VY, cStatePtr->getiVy()+iAy));
             int raP=actionCode;
 
+             // the following uses the method of linear interpolation for approximating the states
             int hIdxL = (int)floor(hP/MDP_H_RES);
             int oVyIdxL = (int)floor(oVyP/MDP_OV_RES);
             int iVyIdxL = (int)floor(iVyP/MDP_IV_RES);
@@ -208,6 +225,7 @@ map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode
             double iVyP= max(-MDP_UPPER_VY, min(MDP_UPPER_VY, cStatePtr->getiVy()+iAy));
             int raP=actionCode;
 
+             // the following uses the method of linear interpolation for approximating the states
             int hIdxL = (int)floor(hP/MDP_H_RES);
             int oVyIdxL = (int)floor(oVyP/MDP_OV_RES);
             int iVyIdxL = (int)floor(iVyP/MDP_IV_RES);
@@ -237,6 +255,7 @@ map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode
 //    time1 = std::chrono::system_clock::now();
 //    cout<<"map time: "<< (static_cast<std::chrono::duration<double>>(time1-time0)).count() <<" senconds."<<endl;
 
+    //merge entries with the same keys by summing up their values
     for(auto entry:nextStateandProbabilities)
     {
         int nextStateOrder=entry.first;
@@ -259,6 +278,7 @@ map<int,double> MDP::getTransitionStatesAndProbs(int cStateOrder, int actionCode
 }
 
 
+// return the reward from a state by doing an action
 double MDP::reward(int cStateOrder, int actionCode)
 {
     State_Ctrl* cStatePtr = cStates+cStateOrder;

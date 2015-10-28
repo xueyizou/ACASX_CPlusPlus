@@ -1,3 +1,17 @@
+/* *************************************************************************************
+ * Copyright (C) Xueyi Zou - All Rights Reserved
+ * Written by Xueyi Zou <xz972@york.ac.uk>, 2015
+ * You are free to use/modify/distribute this file for whatever purpose!
+ -----------------------------------------------------------------------
+ |THIS FILE IS DISTRIBUTED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+ |WARRANTY. THE USER WILL USE IT AT HIS/HER OWN RISK. THE ORIGINAL
+ |AUTHORS AND COPPELIA ROBOTICS GMBH WILL NOT BE LIABLE FOR DATA LOSS,
+ |DAMAGES, LOSS OF PROFITS OR ANY OTHER KIND OF LOSS WHILE USING OR
+ |MISUSING THIS SOFTWARE.
+ ------------------------------------------------------------------------
+
+ **************************************************************************************/
+
 #include "mdpvi.h"
 
 namespace acasx {
@@ -82,6 +96,7 @@ MDPVI::~MDPVI()
     delete[] U;
 }
 
+//q-value: the expected accumulated reward from a state after committed to a certain action, and them acting optimally
 double MDPVI::getQValue(int k, int stateOrder, int action)
 {
     double QValue = 0;
@@ -96,6 +111,7 @@ double MDPVI::getQValue(int k, int stateOrder, int action)
     return QValue;
 }
 
+// store the q-values in lookup tables
 void MDPVI::storeQValues()
 {
     ofstream indexFileWriter;

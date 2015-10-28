@@ -7,7 +7,7 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 CONFIG += precompile_header
-PRECOMPILED_HEADER =
+PRECOMPILED_HEADER = pch.h
 
 TEMPLATE = app
 
@@ -43,6 +43,7 @@ HEADERS += \
 DISTFILES += \
     README.md \
     acasx.pro \
-    CMakeLists.txt
+    CMakeLists.txt \
+    copyright.txt
 
 
